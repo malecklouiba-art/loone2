@@ -6,39 +6,27 @@ on:
   pull_request:
 
 jobs:
-  typecheck:
-    name: Typecheck & lint
+  shared-types:
+    name: Shared types (contrat IA)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # La version de pnpm est lue depuis "packageManager" du package.json.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # Installe uniquement les dépendances du package partagé (TypeScript pur,
+      # déterministe). Pas de lockfile commité pour l'instant → --no-frozen-lockfile.
+      - name: Install (shared)
+        run: pnpm install --filter @loone/shared --no-frozen-lockfile
 
-      - name: Typecheck (workspace)
-        run: pnpm -r typecheck
+      - name: Typecheck (shared)
+        run: pnpm --filter @loone/shared typecheck
 
-      - name: Lint (workspace)
-        run: pnpm -r lint
-        continue-on-error: true
-
-  db:
-    name: Supabase migrations
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - name: Start Supabase & apply migrations
-        run: supabase db start || supabase start
-        continue-on-error: true
+  # NOTE : les typecheck de l'app mobile (Expo/RN) et des Edge Functions (Deno)
+  # seront ajoutés en jobs bloquants une fois les dépendances installées et le
+  # lockfile commité. Voir docs/05 et docs/06.

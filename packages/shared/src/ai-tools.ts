@@ -355,7 +355,7 @@ export const AI_TOOLS: readonly ToolDefinition[] = [
     criticality: "read",
     input_schema: { type: "object", properties: {} },
   },
-] as const;
+];
 
 /** Map nom → criticité, pour la décision serveur. */
 export const TOOL_CRITICALITY: Record<ToolName, ToolCriticality> = AI_TOOLS.reduce(
