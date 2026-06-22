@@ -1,15 +1,68 @@
 // Overlay plein écran du Micro IA : écoute → traitement → confirmation/succès.
-import React from "react";
+// Reçoit `vc` depuis le layout parent pour partager une seule instance du recorder.
+import React, { useEffect } from "react";
 import { Modal, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { useTheme } from "@/theme";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MicButton } from "./MicButton";
-import { useVoiceCommand } from "@/features/voice/useVoiceCommand";
+import type { VoiceCommandAPI } from "@/features/voice/useVoiceCommand";
 
-export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { colors, typography, spacing } = useTheme();
-  const vc = useVoiceCommand();
+// ----------------------------------------------------------------- Waveform
+
+const BAR_SCALES = [0.45, 0.65, 0.85, 1.0, 0.85, 0.65, 0.45] as const;
+
+function WaveBar({
+  amplitude,
+  relativeScale,
+  color,
+}: {
+  amplitude: number;
+  relativeScale: number;
+  color: string;
+}) {
+  const height = useSharedValue(4);
+
+  useEffect(() => {
+    height.value = withSpring(Math.max(4, amplitude * 44 * relativeScale), {
+      damping: 14,
+      stiffness: 200,
+    });
+  }, [amplitude]);
+
+  const style = useAnimatedStyle(() => ({
+    height: height.value,
+    borderRadius: height.value / 2,
+  }));
+
+  return <Animated.View style={[{ width: 5, backgroundColor: color }, style]} />;
+}
+
+function Waveform({ amplitude, color }: { amplitude: number; color: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", height: 52, gap: 5 }}>
+      {BAR_SCALES.map((scale, i) => (
+        <WaveBar key={i} amplitude={amplitude} relativeScale={scale} color={color} />
+      ))}
+    </View>
+  );
+}
+
+// ----------------------------------------------------------------- Overlay
+
+interface VoiceOverlayProps {
+  visible: boolean;
+  onClose: () => void;
+  vc: VoiceCommandAPI;
+}
+
+export function VoiceOverlay({ visible, onClose, vc }: VoiceOverlayProps) {
+  const { colors, typography, spacing, isDark } = useTheme();
   const res = vc.response;
 
   return (
@@ -17,31 +70,43 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.isDark ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.96)",
+          backgroundColor: isDark ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.96)",
           padding: spacing.xl,
           justifyContent: "center",
           gap: spacing.xl,
         }}
       >
-        {/* État ÉCOUTE / TRAITEMENT */}
+        {/* ---- ÉCOUTE / TRAITEMENT ---- */}
         {(vc.status === "listening" || vc.status === "processing" || vc.status === "idle") && (
           <View style={{ alignItems: "center", gap: spacing.lg }}>
-            <MicButton status={vc.status} size={96} onPress={() => vc.stopAndSend()} />
+            <MicButton
+              status={vc.status}
+              size={96}
+              onPress={() => vc.stopAndSend()}
+            />
             <Text style={[typography.title3, { color: colors.label }]}>
               {vc.status === "processing" ? "Un instant…" : "J'écoute…"}
             </Text>
+
+            {vc.status === "listening" && (
+              <Waveform amplitude={vc.amplitude} color={colors.tint} />
+            )}
+
             {vc.transcript ? (
               <Card style={{ width: "100%" }}>
-                <Text style={[typography.body, { color: colors.label }]}>{vc.transcript}</Text>
+                <Text style={[typography.body, { color: colors.label }]}>
+                  {vc.transcript}
+                </Text>
               </Card>
             ) : null}
           </View>
         )}
 
-        {/* CONFIRMATION (action sensible) */}
+        {/* ---- CONFIRMATION (action sensible) ---- */}
         {vc.status === "confirming" && res?.requires_confirmation && (
           <Card style={{ gap: spacing.md }}>
             <Text style={[typography.title3, { color: colors.label }]}>✋ Confirmer</Text>
+
             {res.preview?.type === "email" ? (
               <View style={{ gap: spacing.xs }}>
                 <Text style={[typography.subhead, { color: colors.labelSecondary }]}>
@@ -59,8 +124,14 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
                 {res.action?.tool} — confirmer cette action ?
               </Text>
             )}
+
             <View style={{ flexDirection: "row", gap: spacing.md }}>
-              <Button title="Annuler" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
+              <Button
+                title="Annuler"
+                variant="secondary"
+                onPress={onClose}
+                style={{ flex: 1 }}
+              />
               <Button
                 title="Confirmer"
                 onPress={async () => {
@@ -72,7 +143,7 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
           </Card>
         )}
 
-        {/* CLARIFICATION */}
+        {/* ---- CLARIFICATION ---- */}
         {vc.status === "confirming" && res?.needs_clarification && (
           <Card style={{ gap: spacing.md }}>
             <Text style={[typography.title3, { color: colors.label }]}>Précision</Text>
@@ -81,7 +152,7 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
           </Card>
         )}
 
-        {/* SUCCÈS */}
+        {/* ---- SUCCÈS ---- */}
         {vc.status === "success" && (
           <Card style={{ gap: spacing.md }}>
             <Text style={[typography.title3, { color: colors.success }]}>✅ C'est fait</Text>
@@ -102,7 +173,7 @@ export function VoiceOverlay({ visible, onClose }: { visible: boolean; onClose: 
           </Card>
         )}
 
-        {/* ERREUR */}
+        {/* ---- ERREUR ---- */}
         {vc.status === "error" && (
           <Card style={{ gap: spacing.md }}>
             <Text style={[typography.title3, { color: colors.danger }]}>Oups</Text>

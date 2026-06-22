@@ -1,4 +1,5 @@
 // Layout des onglets : barre custom + micro central qui ouvre le VoiceOverlay.
+// useVoiceCommand est instancié UNE SEULE FOIS ici pour partager le recorder audio.
 import React, { useState } from "react";
 import { Tabs } from "expo-router";
 import { TabBar } from "@/components/ui/TabBar";
@@ -30,6 +31,7 @@ export default function TabsLayout() {
 
       <VoiceOverlay
         visible={overlay}
+        vc={vc}
         onClose={() => {
           setOverlay(false);
           vc.reset();
