@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Loone AI",
+    "slug": "loone-ai",
+    "scheme": "loone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ai.loone.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Loone utilise le micro pour vos commandes vocales.",
+        "NSCalendarsUsageDescription": "Loone synchronise vos rendez-vous avec votre calendrier.",
+        "NSContactsUsageDescription": "Loone peut importer vos contacts comme clients."
+      }
+    },
+    "android": {
+      "package": "ai.loone.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-audio",
+        { "microphonePermission": "Loone utilise le micro pour vos commandes vocales." }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": { "projectId": "00000000-0000-0000-0000-000000000000" }
+    }
+  }
+}
