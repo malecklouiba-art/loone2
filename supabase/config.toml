@@ -1,0 +1,89 @@
+# Configuration Supabase — Loone AI
+# Doc : https://supabase.com/docs/guides/cli/config
+
+project_id = "loone-ai"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.buckets.avatars]
+public = true
+
+[storage.buckets.documents]
+public = false
+
+[storage.buckets.voice-temp]
+public = false
+
+[auth]
+enabled = true
+site_url = "loone://"
+additional_redirect_urls = ["loone://", "https://app.loone.ai"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false   # dev : pas de confirmation email
+
+# OAuth — renseigner les secrets via variables d'environnement en prod
+[auth.external.apple]
+enabled = true
+client_id = "env(SUPABASE_AUTH_APPLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_APPLE_SECRET)"
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+
+# Edge Functions
+[functions.ai-command]
+verify_jwt = true
+
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.email-send]
+verify_jwt = true
+
+[functions.oauth-callback]
+verify_jwt = false   # callback OAuth public
+
+[functions.insights-generate]
+verify_jwt = false   # déclenchée par cron (service role)
+
+[functions.email-sync]
+verify_jwt = false
+
+[functions.calendar-sync]
+verify_jwt = false
+
+[functions.push-send]
+verify_jwt = false

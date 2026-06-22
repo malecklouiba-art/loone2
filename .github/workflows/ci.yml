@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shared-types:
+    name: Shared types (contrat IA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # La version de pnpm est lue depuis "packageManager" du package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Installe uniquement les dépendances du package partagé (TypeScript pur,
+      # déterministe). Pas de lockfile commité pour l'instant → --no-frozen-lockfile.
+      - name: Install (shared)
+        run: pnpm install --filter @loone/shared --no-frozen-lockfile
+
+      - name: Typecheck (shared)
+        run: pnpm --filter @loone/shared typecheck
+
+  # NOTE : les typecheck de l'app mobile (Expo/RN) et des Edge Functions (Deno)
+  # seront ajoutés en jobs bloquants une fois les dépendances installées et le
+  # lockfile commité. Voir docs/05 et docs/06.
